@@ -9,5 +9,7 @@
 # Requirements
 ```sh
 brew install ansible
+brew install terraform
 brew install hudochenkov/sshpass/sshpass
+brew install cdrtools
 ```
