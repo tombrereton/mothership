@@ -4,7 +4,6 @@
   vars:
     ansible_user: "tbrereton"
     ansible_python_interpreter: /usr/bin/python3.12
-  become: yes
   tasks:
     - name: Ensure the .ssh directory exists
       file:
