@@ -1,0 +1,74 @@
+---
+- hosts: mothership
+  vars:
+    tmodloader_download_dir: "/home/tmodloader"
+    tmodloader_install_dir: "/opt/tmodloader"
+    tmodloader_user: "tmodloader"
+
+  tasks:
+    - name: Check the status of tModLoader service
+      command: systemctl status tmodloader.service
+      register: service_status
+      ignore_errors: true
+
+    - name: Stop the tModLoader service
+      become: true
+      systemd:
+        name: tmodloader.service
+        state: stopped
+      ignore_errors: true
+      when: "'active' in service_status.stdout"
+
+    - name: Force-kill tModLoader service if it failed to stop
+      become: true
+      command: systemctl kill tmodloader.service
+      when: "'failed' in service_status.stdout or 'activating' in service_status.stdout"
+      ignore_errors: true
+
+    - name: Reload the systemd daemon
+      become: true
+      command: systemctl daemon-reload
+
+    - name: Confirm the tModLoader service is stopped
+      become: true
+      systemd:
+        name: tmodloader.service
+        state: stopped
+      register: final_status
+      ignore_errors: true
+
+    - name: Remove tModLoader service file
+      become: true
+      ignore_errors: true
+      file:
+        path: /etc/systemd/system/tmodloader.service
+        state: absent
+      notify: Reload systemd
+
+    - name: Remove tModLoader installation directory
+      become: true
+      ignore_errors: true
+      file:
+        path: "{{ tmodloader_install_dir }}"
+        state: absent
+
+    - name: Remove tModLoader download directory
+      become: true
+      ignore_errors: true
+      file:
+        path: "{{ tmodloader_download_dir }}"
+        state: absent
+
+    - name: Remove tModLoader user
+      become: true
+      ignore_errors: true
+      user:
+        name: "{{ tmodloader_user }}"
+        state: absent
+        remove: true
+
+  handlers:
+    - name: Reload systemd
+      become: true
+      systemd:
+        daemon_reload: true

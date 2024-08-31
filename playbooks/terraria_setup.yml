@@ -1,0 +1,104 @@
+---
+- hosts: mothership
+  vars:
+    tmodloader_url: "https://github.com/tModLoader/tModLoader/releases/download/v2024.06.3.1/tModLoader.zip"
+    tmodloader_download_dir: "/home/tmodloader"
+    tmodloader_install_dir: "/opt/tmodloader"
+    tmodloader_user: "tmodloader"
+    tmodloader_port: 7777
+
+  tasks:
+    - name: Ensure tModLoader user exists
+      become: true
+      user:
+        name: "{{ tmodloader_user }}"
+        state: present
+        create_home: true
+
+    - name: Install required packages
+      become: true
+      apt:
+        name:
+          - unzip
+          - curl
+        state: present
+        update_cache: true
+
+    - name: Ensure tModLoader directory exists and is writable
+      become: true
+      file:
+        path: "{{ tmodloader_download_dir }}"
+        state: directory
+        mode: "0775"
+        owner: tmodloader
+        group: tmodloader
+
+    - name: Download tModLoader as root
+      become: true
+      get_url:
+        url: "{{ tmodloader_url }}"
+        dest: "{{ tmodloader_download_dir }}/tModLoader.zip"
+
+    - name: Create installation directory
+      become: true
+      file:
+        path: "{{ tmodloader_install_dir }}"
+        state: directory
+        owner: "{{ tmodloader_user }}"
+        group: "{{ tmodloader_user }}"
+
+    - name: Unzip tModLoader as root
+      become: true
+      unarchive:
+        src: "/home/{{ tmodloader_user }}/tModLoader.zip"
+        dest: "{{ tmodloader_install_dir }}"
+        remote_src: true
+
+    - name: Change ownership of tModLoader files
+      become: true
+      file:
+        path: "{{ tmodloader_install_dir }}"
+        state: directory
+        owner: tmodloader
+        group: tmodloader
+        recurse: yes
+
+    - name: Recursively set execute permissions for /opt/tmodloader
+      become: true
+      file:
+        path: "{{ tmodloader_install_dir }}"
+        recurse: true
+        mode: "a+x"
+
+    - name: Create systemd service for tModLoader
+      become: true
+      copy:
+        dest: /etc/systemd/system/tmodloader.service
+        content: |
+          [Unit]
+          Description=tModLoader Server
+          After=network.target
+
+          [Service]
+          ExecStart={{ tmodloader_install_dir }}/start-tModLoaderServer.sh
+          Type=simple
+          WorkingDirectory={{ tmodloader_install_dir }}
+          User={{ tmodloader_user }}
+          Restart=on-failure
+
+          [Install]
+          WantedBy=multi-user.target
+      notify: Reload systemd
+
+    - name: Enable and start tModLoader service
+      become: true
+      systemd:
+        name: tmodloader
+        enabled: true
+        state: started
+
+  handlers:
+    - name: Reload systemd
+      become: true
+      systemd:
+        daemon_reload: true

@@ -1,9 +1,6 @@
-# ansible-playbook -i inventory.ini setup.yml --ask-pass --ask-become-pass
+# ansible-playbook -i inventory.ini bootstrap.yml --ask-pass --ask-become-pass
 ---
 - hosts: mothership
-  vars:
-    ansible_user: "tbrereton"
-    ansible_python_interpreter: /usr/bin/python3.12
   tasks:
     - name: Ensure the .ssh directory exists
       file:
