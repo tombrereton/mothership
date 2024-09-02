@@ -1,40 +1,24 @@
-#cloud-config
 hostname: mothership
+ssh_pwauth: true
 
 users:
   - name: tbrereton
     ssh_authorized_keys:
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIF/l5i336tQzxErNCrXSRaoyhcjthYOvvAfesHA/fHc noemail
-    groups: sudo libvirt
     shell: /bin/bash
 
-# Update apt package index and upgrade all packages
 package_update: true
 package_upgrade: true
 
-# Install additional packages
 packages:
   - git
   - curl
   - htop
   - cpu-checker
-  - bridge-utils
-  - qemu-kvm
-  - libvirt-bin
-  - virtinst
-
-# Write out arbitrary files
-write_files:
-  - path: /etc/motd
-    permissions: "0644"
-    content: |
-      Welcome to my-server!
 
 runcmd:
   - [ls, -l, /]
   - [sh, -xc, "echo $(date) ': hello world!'"]
-  - [mkdir, -p, /opt/kvm]
-  - [chown, -R, tbrereton:libvirt, /opt/kvm]
 
 # Reboot after all commands are executed
 power_state:
